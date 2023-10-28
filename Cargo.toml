@@ -1,0 +1,18 @@
+[package]
+name = "blobber"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+glam = { version = "0.24", features = ["bytemuck"] }
+gobs-game = { path = "../gobs-engine/gobs-game" }
+gobs-scene = { path = "../gobs-engine/gobs-scene" }
+log = "0.4"
+simplelog = "0.12"
+uuid = { version = "1.3", features = ["v4"] }
+
+[build-dependencies]
+fs_extra = "1.3"
