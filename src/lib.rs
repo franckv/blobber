@@ -16,7 +16,9 @@ pub const WALL_TEXTURE: &str = "tileset.png";
 pub const WALL_TEXTURE_N: &str = "normal.png";
 
 pub fn init_logger() {
-    let config_other = ConfigBuilder::new().add_filter_ignore_str("blobber").build();
+    let config_other = ConfigBuilder::new()
+        .add_filter_ignore_str("blobber")
+        .build();
     let config_self = ConfigBuilder::new().add_filter_allow_str("blobber").build();
 
     let _ = CombinedLogger::init(vec![

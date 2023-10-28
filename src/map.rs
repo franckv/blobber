@@ -40,6 +40,10 @@ impl<M: Copy> TileMap<M> {
         self.tiles.push(tile);
     }
 
+    pub fn collides(&self, position: Vec3) -> bool {
+        self.tiles.iter().find(|t| t.position == position).is_some()
+    }
+
     pub fn load(&mut self, data: &str, tile_size: f32, wall_id: M, floor_id: M) -> Result<()> {
         info!("Load scene");
 

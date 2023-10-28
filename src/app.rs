@@ -83,7 +83,8 @@ impl Run for App {
 
         let mut map = TileMap::new();
 
-        map.load(crate::MAP, crate::TILE_SIZE, wall_id, floor_id).unwrap();
+        map.load(crate::MAP, crate::TILE_SIZE, wall_id, floor_id)
+            .unwrap();
 
         Self::load_scene(&mut scene, &map);
 
@@ -113,7 +114,7 @@ impl Run for App {
         let angular_speed = 40.;
 
         self.camera_controller
-            .update_camera(&mut self.scene.camera, delta);
+            .update_camera(&mut self.scene.camera, &self.map, delta);
 
         let old_position: Vec3 = self.scene.light.position;
         let position: Vec3 =
@@ -166,7 +167,6 @@ impl Run for App {
 
 impl App {
     pub fn load_scene(scene: &mut Scene, map: &TileMap<Uuid>) {
-
         let rotation = Quat::from_axis_angle(Vec3::Z, 0.);
 
         for tile in &map.tiles {

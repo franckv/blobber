@@ -10,6 +10,9 @@ use gobs_scene as scene;
 use game::input::Key;
 
 use scene::camera::Camera;
+use uuid::Uuid;
+
+use crate::map::TileMap;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Facing {
@@ -160,7 +163,7 @@ impl CameraController {
         self.scroll = delta;
     }
 
-    pub fn update_camera(&mut self, camera: &mut Camera, dt: f32) {
+    pub fn update_camera(&mut self, camera: &mut Camera, map: &TileMap<Uuid>, dt: f32) {
         let (yaw_sin, yaw_cos) = camera.yaw.sin_cos();
         let forward = Vec3::new(yaw_cos, 0., yaw_sin).normalize();
         let right = Vec3::new(-yaw_sin, 0., yaw_cos).normalize();
@@ -172,7 +175,9 @@ impl CameraController {
         position += right * (self.amount_right - self.amount_left);
         position += up * (self.amount_up - self.amount_down);
 
-        camera.position = position;
+        if !map.collides(position) {
+            camera.position = position;
+        }
 
         if !self.mouse_pressed {
             camera.yaw = self.facing.yaw();
