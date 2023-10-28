@@ -7,11 +7,11 @@ pub enum TileSet<M> {
     FLOOR(M),
 }
 
-impl<M: Copy> TileSet<M> {
+impl<M: Clone> TileSet<M> {
     pub fn model(&self) -> M {
         match self {
-            TileSet::WALL(m) => *m,
-            TileSet::FLOOR(m) => *m,
+            TileSet::WALL(m) => m.clone(),
+            TileSet::FLOOR(m) => m.clone(),
         }
     }
 }
@@ -26,7 +26,7 @@ pub struct TileMap<M> {
     pub start: Vec3,
 }
 
-impl<M: Copy> TileMap<M> {
+impl<M: Clone> TileMap<M> {
     pub fn new() -> Self {
         TileMap {
             tiles: Vec::new(),
@@ -63,9 +63,9 @@ impl<M: Copy> TileMap<M> {
                         z: j - offset,
                     };
 
-                    self.add_tile(TileSet::WALL(wall_id), position);
+                    self.add_tile(TileSet::WALL(wall_id.clone()), position);
                     position.y = -crate::TILE_SIZE;
-                    self.add_tile(TileSet::FLOOR(floor_id), position);
+                    self.add_tile(TileSet::FLOOR(floor_id.clone()), position);
                 }
                 '@' => {
                     i += crate::TILE_SIZE;
@@ -75,7 +75,7 @@ impl<M: Copy> TileMap<M> {
                         z: j - offset,
                     };
                     (pos_x, pos_z) = (position.x, position.z);
-                    self.add_tile(TileSet::FLOOR(floor_id), position);
+                    self.add_tile(TileSet::FLOOR(floor_id.clone()), position);
                 }
                 '.' => {
                     i += crate::TILE_SIZE;
@@ -84,7 +84,7 @@ impl<M: Copy> TileMap<M> {
                         y: -crate::TILE_SIZE,
                         z: j - offset,
                     };
-                    self.add_tile(TileSet::FLOOR(floor_id), position);
+                    self.add_tile(TileSet::FLOOR(floor_id.clone()), position);
                 }
                 '\n' => {
                     j += crate::TILE_SIZE;

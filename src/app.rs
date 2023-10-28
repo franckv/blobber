@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use glam::{Quat, Vec3};
 
 use crate::controller::{CameraController, Facing};
@@ -7,19 +9,18 @@ use gobs_scene as scene;
 
 use game::{app::Run, input::Input};
 use scene::scene::Scene;
-use scene::Gfx;
 use scene::{
     camera::{Camera, CameraProjection},
-    RenderError, ShaderType,
+    RenderError,
 };
 use scene::{light::Light, MaterialBuilder, ModelBuilder};
-use uuid::Uuid;
+use scene::{Gfx, Model};
 
 pub struct App {
     camera_controller: CameraController,
-    map: TileMap<Uuid>,
+    map: TileMap<Arc<Model>>,
     scene: Scene,
-    light_model: Uuid,
+    light_model: Arc<Model>,
 }
 
 impl Run for App {
@@ -42,48 +43,36 @@ impl Run for App {
 
         let mut scene = Scene::new(gfx, camera, light).await;
 
+        let material = MaterialBuilder::new("diffuse")
+            .diffuse_texture(gfx, crate::WALL_TEXTURE)
+            .await
+            .normal_texture(gfx, crate::WALL_TEXTURE_N)
+            .await
+            .build(gfx, &scene.phong_shader);
+
         let wall_model = ModelBuilder::new()
             .add_mesh(
                 scene::shape::Shapes::cube(
                     gfx,
-                    ShaderType::Phong.vertex_flags(),
+                    scene.phong_shader.vertex_flags(),
                     3,
                     2,
                     &[5, 5, 5, 5, 6, 4],
                 ),
-                0,
-            )
-            .add_material(
-                MaterialBuilder::new("diffuse")
-                    .diffuse_texture(gfx, crate::WALL_TEXTURE)
-                    .await
-                    .normal_texture(gfx, crate::WALL_TEXTURE_N)
-                    .await
-                    .build(gfx, &scene.phong_shader),
+                Some(material.clone()),
             )
             .build();
 
         let floor_model = ModelBuilder::new()
             .add_mesh(
-                scene::shape::Shapes::cube(gfx, ShaderType::Phong.vertex_flags(), 3, 2, &[4]),
-                0,
-            )
-            .add_material(
-                MaterialBuilder::new("diffuse")
-                    .diffuse_texture(gfx, crate::WALL_TEXTURE)
-                    .await
-                    .normal_texture(gfx, crate::WALL_TEXTURE_N)
-                    .await
-                    .build(gfx, &scene.phong_shader),
+                scene::shape::Shapes::cube(gfx, scene.phong_shader.vertex_flags(), 3, 2, &[4]),
+                Some(material),
             )
             .build();
 
-        let wall_id = scene.add_model(wall_model, ShaderType::Phong);
-        let floor_id = scene.add_model(floor_model, ShaderType::Phong);
-
         let mut map = TileMap::new();
 
-        map.load(crate::MAP, crate::TILE_SIZE, wall_id, floor_id)
+        map.load(crate::MAP, crate::TILE_SIZE, wall_model, floor_model)
             .unwrap();
 
         Self::load_scene(&mut scene, &map);
@@ -91,13 +80,15 @@ impl Run for App {
         scene.camera.position = map.start.into();
 
         let light_model = scene
-            .load_model(gfx, crate::LIGHT, ShaderType::Solid, 0.3)
+            .load_model(gfx, crate::LIGHT, scene.solid_shader.clone(), 0.3)
             .await
             .unwrap();
+
         scene.add_node(
             light_position,
             Quat::from_axis_angle(Vec3::Z, 0.),
-            light_model,
+            light_model.clone(),
+            scene.solid_shader.clone(),
         );
 
         let camera_controller = CameraController::new(Facing::North, 0.7);
@@ -125,7 +116,7 @@ impl Run for App {
         self.scene.light.update(light_position);
 
         for node in &mut self.scene.nodes {
-            if node.model() == self.light_model {
+            if node.model().id == self.light_model.id {
                 node.set_transform(light_position, node.transform().rotation);
             }
         }
@@ -166,11 +157,16 @@ impl Run for App {
 }
 
 impl App {
-    pub fn load_scene(scene: &mut Scene, map: &TileMap<Uuid>) {
+    pub fn load_scene(scene: &mut Scene, map: &TileMap<Arc<Model>>) {
         let rotation = Quat::from_axis_angle(Vec3::Z, 0.);
 
         for tile in &map.tiles {
-            scene.add_node(tile.position, rotation, tile.tile.model());
+            scene.add_node(
+                tile.position,
+                rotation,
+                tile.tile.model(),
+                scene.phong_shader.clone(),
+            );
         }
     }
 }

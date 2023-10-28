@@ -12,7 +12,6 @@ gobs-game = { path = "../gobs-engine/gobs-game" }
 gobs-scene = { path = "../gobs-engine/gobs-scene" }
 log = "0.4"
 simplelog = "0.12"
-uuid = { version = "1.3", features = ["v4"] }
 
 [build-dependencies]
 fs_extra = "1.3"
