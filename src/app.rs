@@ -1,9 +1,13 @@
 use std::sync::Arc;
 
 use glam::{Quat, Vec3};
+use hecs::World;
 
+use crate::components::{Name, Orientation, Player, Position, self};
 use crate::controller::{CameraController, Facing};
+use crate::events::Event;
 use crate::map::TileMap;
+use crate::systems;
 use gobs_game as game;
 use gobs_scene as scene;
 
@@ -21,6 +25,8 @@ pub struct App {
     map: TileMap<Arc<Model>>,
     scene: Scene,
     light_model: Arc<Model>,
+    world: World,
+    events: Vec<Event>,
 }
 
 impl Run for App {
@@ -91,21 +97,41 @@ impl Run for App {
             scene.solid_shader.clone(),
         );
 
-        let camera_controller = CameraController::new(Facing::North, 0.7);
+        let camera_controller = CameraController::new(0.7);
+
+        let mut world = World::new();
+
+        world.spawn((
+            Name { name: "Bob".into() },
+            Player,
+            components::Camera,
+            Position {
+                x: map.start.x,
+                y: map.start.y,
+                z: map.start.z,
+            },
+            Orientation {
+                facing: Facing::North,
+            },
+        ));
 
         App {
             camera_controller,
             map,
             scene,
             light_model,
+            world,
+            events: Vec::new(),
         }
     }
 
     fn update(&mut self, delta: f32, gfx: &mut Gfx) {
-        let angular_speed = -10.;
+        systems::update(&mut self.world, &self.events, &self.map, &mut self.scene);
+
+        let angular_speed = 10.;
 
         self.camera_controller
-            .update_camera(&mut self.scene.camera, &self.map, delta);
+            .update_camera(&mut self.scene.camera, delta);
 
         let mut light_position: Vec3 = self.scene.light.position;
         light_position =
@@ -122,6 +148,8 @@ impl Run for App {
         }
 
         self.scene.update(gfx);
+
+        self.events.clear();
     }
 
     fn render(&mut self, gfx: &mut Gfx) -> Result<(), RenderError> {
@@ -129,6 +157,8 @@ impl Run for App {
     }
 
     fn input(&mut self, _gfx: &mut Gfx, input: Input) {
+        self.events.push(Event::Input(input));
+
         match input {
             Input::KeyPressed(key) => {
                 self.camera_controller.key_pressed(key);

@@ -1,6 +1,9 @@
 pub mod app;
+pub mod components;
 pub mod controller;
+pub mod events;
 pub mod map;
+pub mod systems;
 
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, LevelFilter, TermLogger, TerminalMode,

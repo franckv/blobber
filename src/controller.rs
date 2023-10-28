@@ -1,19 +1,12 @@
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
-use std::sync::Arc;
 
-use glam::Vec3;
 use log::*;
 
+use game::input::Key;
 use gobs_game as game;
 use gobs_scene as scene;
-
-use game::input::Key;
-
 use scene::camera::Camera;
-use scene::Model;
-
-use crate::map::TileMap;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Facing {
@@ -24,7 +17,7 @@ pub enum Facing {
 }
 
 impl Facing {
-    fn yaw(&self) -> f32 {
+    pub fn yaw(&self) -> f32 {
         match self {
             Facing::North => -FRAC_PI_2,
             Facing::South => FRAC_PI_2,
@@ -33,7 +26,7 @@ impl Facing {
         }
     }
 
-    fn turn_left(self) -> Self {
+    pub fn turn_left(self) -> Self {
         match self {
             Facing::North => Facing::West,
             Facing::South => Facing::East,
@@ -42,7 +35,7 @@ impl Facing {
         }
     }
 
-    fn turn_right(self) -> Self {
+    pub fn turn_right(self) -> Self {
         match self {
             Facing::North => Facing::East,
             Facing::South => Facing::West,
@@ -54,12 +47,6 @@ impl Facing {
 
 #[derive(Debug)]
 pub struct CameraController {
-    amount_left: f32,
-    amount_right: f32,
-    amount_forward: f32,
-    amount_backward: f32,
-    amount_up: f32,
-    amount_down: f32,
     fov_up: f32,
     fov_down: f32,
     rotate_horizontal: f32,
@@ -68,18 +55,11 @@ pub struct CameraController {
     sensitivity: f32,
     debug: bool,
     mouse_pressed: bool,
-    facing: Facing,
 }
 
 impl CameraController {
-    pub fn new(facing: Facing, sensitivity: f32) -> Self {
+    pub fn new(sensitivity: f32) -> Self {
         Self {
-            amount_left: 0.,
-            amount_right: 0.,
-            amount_forward: 0.,
-            amount_backward: 0.,
-            amount_up: 0.,
-            amount_down: 0.,
             fov_up: 0.,
             fov_down: 0.,
             rotate_horizontal: 0.,
@@ -88,7 +68,6 @@ impl CameraController {
             sensitivity,
             debug: false,
             mouse_pressed: false,
-            facing,
         }
     }
 
@@ -112,34 +91,6 @@ impl CameraController {
         let amount = if pressed { 1. } else { 0. };
 
         match key {
-            Key::A => {
-                if pressed {
-                    self.facing = self.facing.turn_left();
-                }
-            }
-            Key::E => {
-                if pressed {
-                    self.facing = self.facing.turn_right();
-                }
-            }
-            Key::Z | Key::Up => {
-                self.amount_forward = amount;
-            }
-            Key::S | Key::Down => {
-                self.amount_backward = amount;
-            }
-            Key::Q | Key::Left => {
-                self.amount_left = amount;
-            }
-            Key::D | Key::Right => {
-                self.amount_right = amount;
-            }
-            Key::Space => {
-                self.amount_up = amount;
-            }
-            Key::LShift => {
-                self.amount_down = amount;
-            }
             Key::L => {
                 self.debug = true;
             }
@@ -164,36 +115,12 @@ impl CameraController {
         self.scroll = delta;
     }
 
-    pub fn update_camera(&mut self, camera: &mut Camera, map: &TileMap<Arc<Model>>, dt: f32) {
-        let (yaw_sin, yaw_cos) = camera.yaw.sin_cos();
-        let forward = Vec3::new(yaw_cos, 0., yaw_sin).normalize();
-        let right = Vec3::new(-yaw_sin, 0., yaw_cos).normalize();
-        let up = Vec3::new(0., 1., 0.);
-
-        let mut position = camera.position;
-
-        position += forward * (self.amount_forward - self.amount_backward);
-        position += right * (self.amount_right - self.amount_left);
-        position += up * (self.amount_up - self.amount_down);
-
-        if !map.collides(position) {
-            camera.position = position;
-        }
-
+    pub fn update_camera(&mut self, camera: &mut Camera, dt: f32) {
         if !self.mouse_pressed {
-            camera.yaw = self.facing.yaw();
             camera.pitch = 0.;
         }
 
-        self.amount_forward = 0.;
-        self.amount_backward = 0.;
-        self.amount_right = 0.;
-        self.amount_left = 0.;
-        self.amount_up = 0.;
-        self.amount_down = 0.;
-
         camera.projection.fovy += (self.fov_up - self.fov_down) * dt;
-
         camera.yaw += self.rotate_horizontal * self.sensitivity * dt;
         camera.pitch += self.rotate_vertical * self.sensitivity * dt;
 
