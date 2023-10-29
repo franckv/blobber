@@ -3,6 +3,7 @@ pub mod components;
 pub mod controller;
 pub mod events;
 pub mod map;
+pub mod movement;
 pub mod systems;
 
 use simplelog::{

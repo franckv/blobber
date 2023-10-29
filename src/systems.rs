@@ -1,3 +1,4 @@
+mod animate;
 mod camera;
 mod collider;
 mod input;
@@ -5,7 +6,7 @@ mod mover;
 
 use std::sync::Arc;
 
-use gobs_scene::{Model, scene::Scene};
+use gobs_scene::{scene::Scene, Model};
 use hecs::World;
 
 use crate::{events::Event, map::TileMap};
@@ -18,6 +19,7 @@ pub fn update(
 ) {
     input::input_system(world, events);
     collider::collide_system(world, map);
+    animate::animate_system(world);
     mover::move_system(world);
     camera::camera_system(world, scene);
 }

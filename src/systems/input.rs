@@ -1,7 +1,12 @@
 use gobs_game::input::{Input, Key};
 use hecs::World;
+use log::error;
 
-use crate::{events::Event, components::{Action, Direction, Player, Intent}};
+use crate::{
+    components::{Action, Intent, Player},
+    events::Event,
+    movement::Direction,
+};
 
 pub fn input_system(world: &mut World, events: &Vec<Event>) {
     let mut action = Action::None;
@@ -21,11 +26,17 @@ pub fn input_system(world: &mut World, events: &Vec<Event>) {
     });
 
     if action != Action::None {
-        let player = world.query_mut::<&Player>().into_iter().map(|(e, _)| e).next();
+        error!("action={:?}", action);
+        let player = world
+            .query_mut::<&Player>()
+            .without::<&Intent>()
+            .into_iter()
+            .map(|(e, _)| e)
+            .next();
 
         match player {
             Some(e) => world.insert(e, (Intent { action },)).unwrap(),
-            _ => ()
+            _ => (),
         }
     }
 }

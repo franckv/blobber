@@ -1,38 +1,39 @@
 use std::sync::Arc;
 
+use glam::Vec3;
 use gobs_scene::Model;
-use hecs::World;
+use hecs::{CommandBuffer, World};
+use log::error;
 
-use crate::{components::{Intent, Action, Direction, Orientation, Position}, map::TileMap};
+use crate::{
+    components::{Action, Intent, Orientation, Position},
+    map::TileMap,
+    movement,
+};
 
 pub fn collide_system(world: &mut World, map: &TileMap<Arc<Model>>) {
-    let mut to_remove = Vec::new();
+    let mut cmd = CommandBuffer::new();
 
-    world.query::<(&Orientation, &Position, &Intent)>().iter().for_each(|(e, (orientation, position, intent))| {
-        let Intent {action } = intent;
-        let mut new_position = *position;
+    world
+        .query::<(&Orientation, &Position, &Intent)>()
+        .iter()
+        .for_each(|(e, (orientation, position, intent))| {
+            let Intent { action } = intent;
+            let mut translation = Vec3::ZERO;
 
-        match action {
-            Action::Move(Direction::Forward) => {
-                new_position.move_forward(orientation.facing);
-            },
-            Action::Move(Direction::Backward) => {
-                new_position.move_backward(orientation.facing);
-            },
-            Action::Move(Direction::Left) => {
-                new_position.move_left(orientation.facing);
-            },
-            Action::Move(Direction::Right) => {
-                new_position.move_right(orientation.facing);
-            },
-            _ => ()
-        }
-        if map.collides(new_position.into()) {
-            to_remove.push(e);
-        }
-    });
+            match action {
+                Action::Move(direction) => {
+                    translation = movement::get_translation(orientation.facing, *direction, 1.);
+                }
+                _ => (),
+            }
 
-    for e in to_remove {
-        world.remove::<(Intent,)>(e).unwrap();
-    }
+            let new_position = Into::<Vec3>::into(*position) + translation;
+            if map.collides(new_position) {
+                error!("Collide");
+                cmd.remove::<(Intent,)>(e);
+            }
+        });
+
+    cmd.run_on(world);
 }

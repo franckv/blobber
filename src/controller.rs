@@ -1,49 +1,9 @@
-use std::f32::consts::FRAC_PI_2;
-use std::f32::consts::PI;
-
 use log::*;
 
 use game::input::Key;
 use gobs_game as game;
 use gobs_scene as scene;
 use scene::camera::Camera;
-
-#[derive(Copy, Clone, Debug)]
-pub enum Facing {
-    North,
-    South,
-    East,
-    West,
-}
-
-impl Facing {
-    pub fn yaw(&self) -> f32 {
-        match self {
-            Facing::North => -FRAC_PI_2,
-            Facing::South => FRAC_PI_2,
-            Facing::East => 0.,
-            Facing::West => PI,
-        }
-    }
-
-    pub fn turn_left(self) -> Self {
-        match self {
-            Facing::North => Facing::West,
-            Facing::South => Facing::East,
-            Facing::East => Facing::North,
-            Facing::West => Facing::South,
-        }
-    }
-
-    pub fn turn_right(self) -> Self {
-        match self {
-            Facing::North => Facing::East,
-            Facing::South => Facing::West,
-            Facing::East => Facing::South,
-            Facing::West => Facing::North,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CameraController {

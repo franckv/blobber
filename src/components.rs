@@ -1,3 +1,4 @@
+mod animation;
 mod camera;
 mod health;
 mod intent;
@@ -6,9 +7,10 @@ mod orientation;
 mod player;
 mod position;
 
+pub use animation::{Animation, AnimationType};
 pub use camera::Camera;
 pub use health::Health;
-pub use intent::{Direction, Intent, Action};
+pub use intent::{Action, Intent};
 pub use name::Name;
 pub use orientation::Orientation;
 pub use player::Player;

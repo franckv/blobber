@@ -13,7 +13,7 @@ pub fn camera_system(world: &mut World, scene: &mut Scene) {
     match camera {
         Some((position, orientation)) => {
             scene.camera.position = (*position).into();
-            scene.camera.yaw = orientation.facing.yaw();
+            scene.camera.yaw = orientation.yaw;
         }
         None => panic!(),
     }

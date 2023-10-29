@@ -3,10 +3,11 @@ use std::sync::Arc;
 use glam::{Quat, Vec3};
 use hecs::World;
 
-use crate::components::{Name, Orientation, Player, Position, self};
-use crate::controller::{CameraController, Facing};
+use crate::components::{self, Name, Orientation, Player, Position};
+use crate::controller::CameraController;
 use crate::events::Event;
 use crate::map::TileMap;
+use crate::movement::Facing;
 use crate::systems;
 use gobs_game as game;
 use gobs_scene as scene;
@@ -110,9 +111,7 @@ impl Run for App {
                 y: map.start.y,
                 z: map.start.z,
             },
-            Orientation {
-                facing: Facing::North,
-            },
+            Orientation::new(Facing::North),
         ));
 
         App {

@@ -1,11 +1,4 @@
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Direction {
-    Left,
-    Right,
-    Forward,
-    Backward,
-}
+use crate::movement::Direction;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Action {
@@ -16,5 +9,5 @@ pub enum Action {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Intent {
-    pub action: Action
+    pub action: Action,
 }
