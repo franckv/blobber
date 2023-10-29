@@ -25,13 +25,14 @@ fn instant_move(world: &mut World) -> CommandBuffer {
                 Action::Move(direction) => {
                     let translation = movement::get_translation(orientation.facing, *direction, 1.);
                     position.translate(translation, true);
+                    cmd.remove::<(Intent,)>(e);
                 }
                 Action::Turn(direction) => {
                     orientation.rotate(*direction, 1., true);
+                    cmd.remove::<(Intent,)>(e);
                 }
-                _ => panic!(),
+                _ => (),
             }
-            cmd.remove::<(Intent,)>(e);
         });
 
     cmd

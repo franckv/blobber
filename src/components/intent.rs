@@ -5,6 +5,8 @@ pub enum Action {
     None,
     Move(Direction),
     Turn(Direction),
+    Look((f32, f32)),
+    ControlCamera(bool),
 }
 
 #[derive(Clone, Copy, Debug)]

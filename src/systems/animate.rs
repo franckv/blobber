@@ -1,5 +1,5 @@
 use hecs::{CommandBuffer, World};
-use log::error;
+use log::debug;
 
 use crate::components::{Action, Animation, AnimationType, Intent, Orientation, Position};
 
@@ -37,7 +37,7 @@ pub fn add_animation(world: &mut World) -> CommandBuffer {
                         )),),
                     );
                 }
-                _ => panic!(),
+                _ => (),
             }
         });
 
@@ -54,7 +54,7 @@ fn update_animation(world: &mut World) -> CommandBuffer {
             let finished = animation.progress();
 
             if finished {
-                error!("Animation done");
+                debug!("Animation done");
                 cmd.remove::<(Animation,)>(e);
                 cmd.remove::<(Intent,)>(e);
             }

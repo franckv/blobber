@@ -4,7 +4,6 @@ use glam::{Quat, Vec3};
 use hecs::World;
 
 use crate::components::{self, Name, Orientation, Player, Position};
-use crate::controller::CameraController;
 use crate::events::Event;
 use crate::map::TileMap;
 use crate::movement::Facing;
@@ -22,7 +21,6 @@ use scene::{light::Light, MaterialBuilder, ModelBuilder};
 use scene::{Gfx, Model};
 
 pub struct App {
-    camera_controller: CameraController,
     map: TileMap<Arc<Model>>,
     scene: Scene,
     light_model: Arc<Model>,
@@ -46,7 +44,6 @@ impl Run for App {
         );
 
         let light = Light::new((0., 20., 0.), (1., 1., 0.9));
-        let light_position = light.position;
 
         let mut scene = Scene::new(gfx, camera, light).await;
 
@@ -87,25 +84,23 @@ impl Run for App {
         scene.camera.position = map.start.into();
 
         let light_model = scene
-            .load_model(gfx, crate::LIGHT, scene.solid_shader.clone(), 0.3)
+            .load_model(gfx, crate::LIGHT, scene.solid_shader.clone(), 1.)
             .await
             .unwrap();
 
         scene.add_node(
-            light_position,
+            scene.light.position,
             Quat::from_axis_angle(Vec3::Z, 0.),
             light_model.clone(),
             scene.solid_shader.clone(),
         );
-
-        let camera_controller = CameraController::new(0.7);
 
         let mut world = World::new();
 
         world.spawn((
             Name { name: "Bob".into() },
             Player,
-            components::Camera,
+            components::Camera::new(),
             Position {
                 x: map.start.x,
                 y: map.start.y,
@@ -115,7 +110,6 @@ impl Run for App {
         ));
 
         App {
-            camera_controller,
             map,
             scene,
             light_model,
@@ -125,12 +119,15 @@ impl Run for App {
     }
 
     fn update(&mut self, delta: f32, gfx: &mut Gfx) {
-        systems::update(&mut self.world, &self.events, &self.map, &mut self.scene);
+        systems::update(
+            delta,
+            &mut self.world,
+            &self.events,
+            &self.map,
+            &mut self.scene,
+        );
 
         let angular_speed = 10.;
-
-        self.camera_controller
-            .update_camera(&mut self.scene.camera, delta);
 
         let mut light_position: Vec3 = self.scene.light.position;
         light_position =
@@ -157,27 +154,6 @@ impl Run for App {
 
     fn input(&mut self, _gfx: &mut Gfx, input: Input) {
         self.events.push(Event::Input(input));
-
-        match input {
-            Input::KeyPressed(key) => {
-                self.camera_controller.key_pressed(key);
-            }
-            Input::KeyReleased(key) => {
-                self.camera_controller.key_released(key);
-            }
-            Input::MousePressed => {
-                self.camera_controller.mouse_pressed();
-            }
-            Input::MouseReleased => {
-                self.camera_controller.mouse_released();
-            }
-            Input::MouseWheel(delta) => {
-                self.camera_controller.mouse_scroll(delta);
-            }
-            Input::MouseMotion(dx, dy) => {
-                self.camera_controller.mouse_drag(dx, dy);
-            }
-        }
     }
 
     fn resize(&mut self, width: u32, height: u32, gfx: &mut Gfx) {
@@ -187,12 +163,10 @@ impl Run for App {
 
 impl App {
     pub fn load_scene(scene: &mut Scene, map: &TileMap<Arc<Model>>) {
-        let rotation = Quat::from_axis_angle(Vec3::Z, 0.);
-
         for tile in &map.tiles {
             scene.add_node(
                 tile.position,
-                rotation,
+                Quat::IDENTITY,
                 tile.tile.model(),
                 scene.phong_shader.clone(),
             );

@@ -6,7 +6,7 @@ use hecs::{CommandBuffer, World};
 use log::error;
 
 use crate::{
-    components::{Action, Intent, Orientation, Position},
+    components::{Action, Animation, Intent, Orientation, Position},
     map::TileMap,
     movement,
 };
@@ -16,6 +16,7 @@ pub fn collide_system(world: &mut World, map: &TileMap<Arc<Model>>) {
 
     world
         .query::<(&Orientation, &Position, &Intent)>()
+        .without::<(&Animation,)>()
         .iter()
         .for_each(|(e, (orientation, position, intent))| {
             let Intent { action } = intent;

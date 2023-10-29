@@ -1,6 +1,5 @@
 pub mod app;
 pub mod components;
-pub mod controller;
 pub mod events;
 pub mod map;
 pub mod movement;
@@ -9,8 +8,6 @@ pub mod systems;
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, LevelFilter, TermLogger, TerminalMode,
 };
-
-pub use controller::CameraController;
 
 pub const MAP: &str = include_str!("../assets/dungeon.map");
 pub const CUBE: &str = "cube.obj";
