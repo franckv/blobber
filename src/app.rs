@@ -13,10 +13,7 @@ use gobs_scene as scene;
 
 use game::{app::Run, input::Input};
 use scene::scene::Scene;
-use scene::{
-    camera::{Camera, CameraProjection},
-    RenderError,
-};
+use scene::{camera::Camera, RenderError};
 use scene::{light::Light, MaterialBuilder, ModelBuilder};
 use scene::{Gfx, Model};
 
@@ -30,17 +27,15 @@ pub struct App {
 
 impl Run for App {
     async fn create(gfx: &mut Gfx) -> Self {
-        let camera = Camera::new(
+        let camera = Camera::perspective(
             (0., 0., 0.),
-            CameraProjection::new(
-                gfx.width(),
-                gfx.height(),
-                (70. as f32).to_radians(),
-                0.1,
-                150.,
-            ),
+            gfx.width() as f32 / gfx.height() as f32,
+            (70. as f32).to_radians(),
+            0.1,
+            150.,
             (0. as f32).to_radians(),
             (0. as f32).to_radians(),
+            Vec3::Y,
         );
 
         let light = Light::new((0., 20., 0.), (1., 1., 0.9));
