@@ -79,7 +79,7 @@ impl Run for App {
         scene.camera.position = map.start.into();
 
         let light_model = scene
-            .load_model(gfx, crate::LIGHT, scene.solid_shader.clone(), 1.)
+            .load_model(gfx, crate::LIGHT, scene.solid_shader.clone(), Vec3::splat(1.))
             .await
             .unwrap();
 
