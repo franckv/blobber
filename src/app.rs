@@ -1,21 +1,21 @@
 use std::sync::Arc;
 
 use glam::{Quat, Vec3};
+use gobs::scene::shape::Shapes;
 use hecs::World;
+
+use gobs::core::entity::{camera::Camera, instance::InstanceFlag, light::Light};
+use gobs::core::geometry::vertex::VertexFlag;
+use gobs::game::{app::Run, input::Input};
+use gobs::scene::{
+    Gfx, MaterialBuilder, Model, ModelBuilder, PipelineFlag, RenderError, Scene, Shader,
+};
 
 use crate::components::{self, Name, Orientation, Player, Position};
 use crate::events::Event;
 use crate::map::TileMap;
 use crate::movement::Facing;
 use crate::systems;
-use gobs_game as game;
-use gobs_scene as scene;
-
-use game::{app::Run, input::Input};
-use scene::scene::Scene;
-use scene::{camera::Camera, RenderError};
-use scene::{light::Light, MaterialBuilder, ModelBuilder};
-use scene::{Gfx, Model};
 
 pub struct App {
     map: TileMap<Arc<Model>>,
@@ -26,7 +26,7 @@ pub struct App {
 }
 
 impl Run for App {
-    async fn create(gfx: &mut Gfx) -> Self {
+    async fn create(gfx: &Gfx) -> Self {
         let camera = Camera::perspective(
             (0., 0., 0.),
             gfx.width() as f32 / gfx.height() as f32,
@@ -40,34 +40,30 @@ impl Run for App {
 
         let light = Light::new((0., 20., 0.), (1., 1., 0.9));
 
-        let mut scene = Scene::new(gfx, camera, light).await;
+        let phong_shader = Self::phong_shader(gfx).await;
+        let solid_shader = Self::solid_shader(gfx).await;
+        let wire_shader = Self::wire_shader(gfx).await;
+
+        let mut scene = Scene::new(gfx, camera, light, &[wire_shader]).await;
+        scene.toggle_pass(crate::WIRE_PASS);
 
         let material = MaterialBuilder::new("diffuse")
-            .diffuse_texture(gfx, crate::WALL_TEXTURE)
+            .diffuse_texture(crate::WALL_TEXTURE)
             .await
-            .normal_texture(gfx, crate::WALL_TEXTURE_N)
+            .normal_texture(crate::WALL_TEXTURE_N)
             .await
-            .build(gfx, &scene.phong_shader);
+            .build();
 
         let wall_model = ModelBuilder::new()
             .add_mesh(
-                scene::shape::Shapes::cube(
-                    gfx,
-                    scene.phong_shader.vertex_flags(),
-                    3,
-                    2,
-                    &[5, 5, 5, 5, 6, 4],
-                ),
+                Shapes::cube(3, 2, &[5, 5, 5, 5, 6, 4]),
                 Some(material.clone()),
             )
-            .build();
+            .build(phong_shader.clone());
 
         let floor_model = ModelBuilder::new()
-            .add_mesh(
-                scene::shape::Shapes::cube(gfx, scene.phong_shader.vertex_flags(), 3, 2, &[4]),
-                Some(material),
-            )
-            .build();
+            .add_mesh(Shapes::cube(3, 2, &[4]), Some(material))
+            .build(phong_shader);
 
         let mut map = TileMap::new();
 
@@ -79,15 +75,16 @@ impl Run for App {
         scene.camera.position = map.start.into();
 
         let light_model = scene
-            .load_model(gfx, crate::LIGHT, scene.solid_shader.clone(), Vec3::splat(1.))
+            .load_model(crate::LIGHT, None, solid_shader)
             .await
             .unwrap();
 
         scene.add_node(
+            "light",
             scene.light.position,
             Quat::from_axis_angle(Vec3::Z, 0.),
+            Vec3::splat(1.),
             light_model.clone(),
-            scene.solid_shader.clone(),
         );
 
         let mut world = World::new();
@@ -113,7 +110,7 @@ impl Run for App {
         }
     }
 
-    fn update(&mut self, delta: f32, gfx: &mut Gfx) {
+    fn update(&mut self, delta: f32, gfx: &Gfx) {
         systems::update(
             delta,
             &mut self.world,
@@ -132,9 +129,9 @@ impl Run for App {
 
         self.scene.light.update(light_position);
 
-        for node in &mut self.scene.nodes {
+        for node in self.scene.layer_mut("light").nodes_mut() {
             if node.model().id == self.light_model.id {
-                node.set_transform(light_position, node.transform().rotation);
+                node.move_to_position(light_position);
             }
         }
 
@@ -143,28 +140,73 @@ impl Run for App {
         self.events.clear();
     }
 
-    fn render(&mut self, gfx: &mut Gfx) -> Result<(), RenderError> {
+    fn render(&mut self, gfx: &Gfx) -> Result<(), RenderError> {
         self.scene.render(gfx)
     }
 
-    fn input(&mut self, _gfx: &mut Gfx, input: Input) {
+    fn input(&mut self, _gfx: &Gfx, input: Input) {
         self.events.push(Event::Input(input));
     }
 
-    fn resize(&mut self, width: u32, height: u32, gfx: &mut Gfx) {
-        self.scene.resize(gfx, width, height)
+    fn resize(&mut self, width: u32, height: u32, _gfx: &Gfx) {
+        self.scene.resize(width, height)
     }
 }
 
 impl App {
-    pub fn load_scene(scene: &mut Scene, map: &TileMap<Arc<Model>>) {
+    fn load_scene(scene: &mut Scene, map: &TileMap<Arc<Model>>) {
         for tile in &map.tiles {
+            let layer = match tile.tile {
+                crate::map::TileSet::WALL(_) => "wall",
+                crate::map::TileSet::FLOOR(_) => "floor",
+            };
+
             scene.add_node(
+                layer,
                 tile.position,
                 Quat::IDENTITY,
+                Vec3::ONE,
                 tile.tile.model(),
-                scene.phong_shader.clone(),
             );
         }
+    }
+
+    async fn phong_shader(gfx: &Gfx) -> Arc<Shader> {
+        Shader::new(
+            gfx,
+            "Phong",
+            "phong.wgsl",
+            VertexFlag::POSITION | VertexFlag::TEXTURE | VertexFlag::NORMAL,
+            InstanceFlag::MODEL | InstanceFlag::NORMAL,
+            PipelineFlag::CULLING | PipelineFlag::DEPTH_TEST | PipelineFlag::DEPTH_WRITE,
+        )
+        .await
+    }
+
+    async fn solid_shader(gfx: &Gfx) -> Arc<Shader> {
+        Shader::new(
+            gfx,
+            "Solid",
+            "solid.wgsl",
+            VertexFlag::POSITION | VertexFlag::COLOR,
+            InstanceFlag::MODEL,
+            PipelineFlag::CULLING | PipelineFlag::DEPTH_TEST | PipelineFlag::DEPTH_WRITE,
+        )
+        .await
+    }
+
+    pub async fn wire_shader(gfx: &Gfx) -> Arc<Shader> {
+        Shader::new(
+            gfx,
+            crate::WIRE_PASS,
+            "wire.wgsl",
+            VertexFlag::POSITION,
+            InstanceFlag::MODEL,
+            PipelineFlag::CULLING
+                | PipelineFlag::DEPTH_TEST
+                | PipelineFlag::LINE
+                | PipelineFlag::ALPHA,
+        )
+        .await
     }
 }

@@ -1,4 +1,4 @@
-use gobs_game::input::Input;
+use gobs::game::input::Input;
 
 #[derive(Debug)]
 pub enum Event {

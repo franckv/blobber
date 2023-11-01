@@ -1,5 +1,4 @@
-use game::app::Application;
-use gobs_game as game;
+use gobs::game::app::Application;
 
 use blobber;
 use blobber::app::App;

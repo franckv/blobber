@@ -8,8 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 glam = { version = "0.24", features = ["bytemuck"] }
-gobs-game = { path = "../gobs-engine/gobs-game" }
-gobs-scene = { path = "../gobs-engine/gobs-scene" }
+gobs = { path = "../gobs-engine/gobs" }
 hecs = "0.10"
 log = "0.4"
 simplelog = "0.12"

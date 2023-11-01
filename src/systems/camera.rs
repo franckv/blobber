@@ -1,4 +1,4 @@
-use gobs_scene::scene::Scene;
+use gobs::scene::Scene;
 use hecs::{CommandBuffer, World};
 
 use crate::components::{Camera, Intent, Orientation, Position};

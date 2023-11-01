@@ -7,8 +7,9 @@ mod mover;
 
 use std::sync::Arc;
 
-use gobs_scene::{scene::Scene, Model};
 use hecs::World;
+
+use gobs::scene::{Model, Scene};
 
 use crate::{events::Event, map::TileMap};
 

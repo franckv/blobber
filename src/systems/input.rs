@@ -1,5 +1,6 @@
-use gobs_game::input::{Input, Key};
 use hecs::{CommandBuffer, World};
+
+use gobs::game::input::{Input, Key};
 
 use crate::{
     components::{Action, Intent, Player},

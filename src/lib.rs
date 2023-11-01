@@ -15,6 +15,7 @@ pub const LIGHT: &str = "sphere.obj";
 pub const TILE_SIZE: f32 = 1.;
 pub const WALL_TEXTURE: &str = "tileset.png";
 pub const WALL_TEXTURE_N: &str = "normal.png";
+pub const WIRE_PASS: &str = "Wire";
 
 pub fn init_logger() {
     let config_other = ConfigBuilder::new()

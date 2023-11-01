@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use glam::Vec3;
-use gobs_scene::Model;
 use hecs::{CommandBuffer, World};
 use log::error;
+
+use gobs::scene::Model;
 
 use crate::{
     components::{Action, Animation, Intent, Orientation, Position},
